@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF量化投研平台 — 管理看板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+        .header {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header .status { font-size: 12px; color: #8888aa; }
+
+        .board {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            overflow-x: auto;
+            min-height: calc(100vh - 200px);
+        }
+        @media (max-width: 768px) {
+            .board { flex-direction: column; }
+        }
+
+        .column {
+            background: #fff;
+            border-radius: 8px;
+            min-width: 240px;
+            flex: 1;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .column-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .column[data-module="data"] .column-header { border-color: #3498db; }
+        .column[data-module="quant"] .column-header { border-color: #e74c3c; }
+        .column[data-module="research"] .column-header { border-color: #2ecc71; }
+        .column[data-module="frontend"] .column-header { border-color: #f39c12; }
+        .column[data-module="notification"] .column-header { border-color: #9b59b6; }
+
+        .task-count {
+            background: #eee;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        .task-list { padding: 8px; }
+
+        .task-card {
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        .task-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .task-card .task-id {
+            font-size: 11px;
+            color: #999;
+            font-weight: 600;
+        }
+        .task-card .task-title {
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .task-card .task-meta {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .badge {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-progress { background: #cce5ff; color: #004085; }
+        .badge-done { background: #d4edda; color: #155724; }
+        .badge-blocked { background: #f8d7da; color: #721c24; }
+        .badge-p0 { background: #e74c3c; color: #fff; }
+        .badge-p1 { background: #f39c12; color: #fff; }
+        .badge-p2 { background: #95a5a6; color: #fff; }
+
+        .log-panel {
+            background: #1a1a2e;
+            color: #a0ffa0;
+            padding: 16px;
+            margin: 0 16px 16px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: "Fira Code", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .log-panel .log-line { white-space: pre-wrap; word-break: break-all; }
+        .log-panel .log-error { color: #ff6b6b; }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+        .toolbar button {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .toolbar button:hover { background: #f5f5f5; }
+        .toolbar button.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+        #voice-btn {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        #voice-btn:hover { background: #c0392b; }
+        #voice-btn.recording { animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ETF量化投研平台 — 管理看板</h1>
+        <div class="status" id="conn-status">连接中...</div>
+    </div>
+
+    <div class="toolbar">
+        <button onclick="refreshTasks()" class="active">刷新任务</button>
+        <button onclick="toggleLogs()">日志</button>
+        <button id="voice-btn" onclick="toggleVoice()">🎤 语音输入</button>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="log-panel" id="log-panel" style="display:none;">
+        <div id="log-content">等待日志...</div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        const MODULES = ['data', 'quant', 'research', 'frontend', 'notification'];
+        const MODULE_LABELS = {
+            data: 'Data 数据',
+            quant: 'Quant 量化',
+            research: 'Research 研报',
+            frontend: 'Frontend 前端',
+            notification: 'Notify 推送'
+        };
+
+        function statusBadge(status) {
+            const map = {
+                '待开始': 'badge-pending',
+                '进行中': 'badge-progress',
+                '已完成': 'badge-done',
+                'BLOCKED': 'badge-blocked',
+            };
+            return `<span class="badge ${map[status] || 'badge-pending'}">${status}</span>`;
+        }
+
+        function priorityBadge(p) {
+            const map = { P0: 'badge-p0', P1: 'badge-p1', P2: 'badge-p2' };
+            return p ? `<span class="badge ${map[p] || ''}">${p}</span>` : '';
+        }
+
+        async function refreshTasks() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/tasks`);
+                const json = await resp.json();
+                if (json.code !== 0) return;
+
+                const board = document.getElementById('board');
+                board.innerHTML = '';
+
+                for (const mod of MODULES) {
+                    const tasks = json.data[mod] || [];
+                    const col = document.createElement('div');
+                    col.className = 'column';
+                    col.dataset.module = mod;
+
+                    const done = tasks.filter(t => t.status === '已完成').length;
+                    col.innerHTML = `
+                        <div class="column-header">
+                            ${MODULE_LABELS[mod]}
+                            <span class="task-count">${done}/${tasks.length}</span>
+                        </div>
+                        <div class="task-list">
+                            ${tasks.map(t => `
+                                <div class="task-card" onclick="taskClick('${mod}','${t.id}')">
+                                    <div class="task-id">${t.id}</div>
+                                    <div class="task-title">${t.title}</div>
+                                    <div class="task-meta">
+                                        ${statusBadge(t.status)}
+                                        ${priorityBadge(t.priority)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    board.appendChild(col);
+                }
+
+                document.getElementById('conn-status').textContent =
+                    `更新于 ${new Date().toLocaleTimeString()}`;
+            } catch (e) {
+                document.getElementById('conn-status').textContent = '连接失败';
+            }
+        }
+
+        async function taskClick(module, taskId) {
+            if (confirm(`派发任务 ${taskId} (${module}) ?`)) {
+                await fetch(`${API_BASE}/api/tasks/dispatch?module=${module}&task_id=${taskId}`, {
+                    method: 'POST'
+                });
+                refreshTasks();
+            }
+        }
+
+        // 日志面板
+        let logVisible = false;
+        function toggleLogs() {
+            logVisible = !logVisible;
+            document.getElementById('log-panel').style.display = logVisible ? 'block' : 'none';
+            if (logVisible) loadLogs('data');
+        }
+
+        async function loadLogs(module) {
+            try {
+                const resp = await fetch(`${API_BASE}/api/logs/${module}`);
+                const json = await resp.json();
+                const content = document.getElementById('log-content');
+                if (json.data && json.data.lines) {
+                    content.innerHTML = json.data.lines.map(l => {
+                        const text = l.raw || JSON.stringify(l);
+                        const cls = text.toLowerCase().includes('error') ? 'log-error' : '';
+                        return `<div class="log-line ${cls}">${escapeHtml(text)}</div>`;
+                    }).join('');
+                } else {
+                    content.textContent = '暂无日志';
+                }
+            } catch (e) {
+                document.getElementById('log-content').textContent = '加载失败';
+            }
+        }
+
+        function escapeHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // WebSocket 实时日志
+        let ws = null;
+        function connectWS() {
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws/logs`);
+            ws.onmessage = (e) => {
+                const content = document.getElementById('log-content');
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.textContent = e.data;
+                content.appendChild(div);
+                content.scrollTop = content.scrollHeight;
+            };
+            ws.onclose = () => setTimeout(connectWS, 5000);
+        }
+
+        // 语音输入 (Web Speech API)
+        let recognition = null;
+        let isRecording = false;
+
+        function toggleVoice() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                alert('浏览器不支持语音识别');
+                return;
+            }
+
+            const btn = document.getElementById('voice-btn');
+            if (isRecording) {
+                recognition.stop();
+                btn.classList.remove('recording');
+                btn.textContent = '🎤 语音输入';
+                isRecording = false;
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                alert(`语音内容：${text}\n(后续可接入任务派发)`);
+            };
+            recognition.onerror = () => {
+                btn.classList.remove('recording');
+                btn.textContent = '🎤 语音输入';
+                isRecording = false;
+            };
+            recognition.onend = () => {
+                btn.classList.remove('recording');
+                btn.textContent = '🎤 语音输入';
+                isRecording = false;
+            };
+
+            recognition.start();
+            btn.classList.add('recording');
+            btn.textContent = '⏹ 录音中...';
+            isRecording = true;
+        }
+
+        // 初始化
+        refreshTasks();
+        connectWS();
+        setInterval(refreshTasks, 30000);
+    </script>
+</body>
+</html>
