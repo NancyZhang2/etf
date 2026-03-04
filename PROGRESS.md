@@ -30,22 +30,35 @@
 
 ---
 
+## 2026-03-04 [基础设施] Phase 0 基础设施搭建
+
+任务：从零搭建完整项目基础设施（目录骨架、Git、后端框架、调度器、管理界面、定时任务、备份脚本、Worktree）
+
+教训：
+1. Git worktree 创建前必须有至少一个 commit，否则无法 checkout 分支。
+2. Orchestrator dry-run 模式验证通过，可识别5个模块的待办任务（data:D1、quant:Q1、research:R1、frontend:F1、notification:N1）。
+3. TODO.md 的解析依赖固定格式（"## X1. 标题" + "状态：xxx"），Worker 修改 TODO.md 时必须保持格式一致。
+4. Web Manager 静态文件使用 FastAPI StaticFiles 挂载，index.html 通过 API 轮询获取任务状态。
+5. scheduler.py 使用 APScheduler BlockingScheduler，交易日判断先检查周末，再尝试从 Data API 获取日历。
+
+---
+
 ## 阶段进度追踪
 
 ### Phase 0：基础设施搭建
-状态：未开始
+状态：已完成
 
 | 任务 | 类别 | 状态 | 备注 |
 |------|------|------|------|
-| 项目目录结构搭建 | 项目骨架 | 待开始 | modules/、orchestrator/、web_manager/、scripts/、logs/、backend/ |
-| modules/*/TODO.md 创建 | 任务队列 | 待开始 | data/quant/research/frontend/notification 五个模块 |
-| Git Worktree 结构搭建 | 开发隔离 | 待开始 | 5个worktree + 软链接（CLAUDE.md/PROGRESS.md/TODO.md） |
-| Orchestrator 核心调度器 | 进程1 | 待开始 | 监控TODO.md、启动Worker、解析日志、失败重试 |
-| Worker 启动模板 | 进程2 | 待开始 | worker_prompt_template.txt、stream-json日志 |
-| Web Manager 管理界面 | 进程3 | 待开始 | FastAPI 8080、任务派发/看板/日志/语音 |
-| scheduler.py 定时任务 | 进程4 | 待开始 | 15:30数据/16:00信号/18:00研报/每小时备份 |
-| backup.sh 数据库备份 | 运维 | 待开始 | 增量+全量备份脚本 |
-| .env 配置模板 | 配置 | 待开始 | DATABASE_URL 等环境变量 |
+| 项目目录结构搭建 | 项目骨架 | 已完成 | modules/、orchestrator/、web_manager/、scripts/、logs/、backend/ |
+| modules/*/TODO.md 创建 | 任务队列 | 已完成 | data/quant/research/frontend/notification 五个模块 |
+| Git Worktree 结构搭建 | 开发隔离 | 已完成 | 5个worktree + 软链接（CLAUDE.md/PROGRESS.md/TODO.md） |
+| Orchestrator 核心调度器 | 进程1 | 已完成 | 监控TODO.md、启动Worker、解析日志、失败重试 |
+| Worker 启动模板 | 进程2 | 已完成 | worker_prompt_template.txt、stream-json日志 |
+| Web Manager 管理界面 | 进程3 | 已完成 | FastAPI 8080、任务派发/看板/日志/语音 |
+| scheduler.py 定时任务 | 进程4 | 已完成 | 15:30数据/16:00信号/18:00研报/每小时备份 |
+| backup.sh 数据库备份 | 运维 | 已完成 | 增量+全量备份脚本 |
+| .env 配置模板 | 配置 | 已完成 | DATABASE_URL 等环境变量 |
 
 交付标准：Orchestrator 可启动并监控TODO.md → Web Manager 可打开看板 → Scheduler 可触发定时任务
 
