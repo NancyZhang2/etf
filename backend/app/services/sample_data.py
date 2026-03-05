@@ -177,10 +177,13 @@ if __name__ == "__main__":
     async def main():
         from backend.app.database import async_session
         from backend.app.services.seed import seed_strategy_data
+        from backend.app.services.sample_research_data import generate_sample_research
 
         async with async_session() as db:
             await seed_strategy_data(db)
             stats = await generate_sample_data(db)
+            research_stats = await generate_sample_research(db)
             print(f"Done: {stats}")
+            print(f"Research: {research_stats}")
 
     asyncio.run(main())
