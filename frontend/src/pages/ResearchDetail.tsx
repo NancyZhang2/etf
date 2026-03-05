@@ -141,7 +141,32 @@ export default function ResearchDetail() {
           {/* ETF relevance */}
           {analysis.etf_relevance && (
             <Card title="ETF关联度">
-              <p className="text-sm text-gray-700">{analysis.etf_relevance}</p>
+              {typeof analysis.etf_relevance === 'string' ? (
+                <p className="text-sm text-gray-700">{analysis.etf_relevance}</p>
+              ) : (
+                <div className="flex items-center gap-4">
+                  {analysis.etf_relevance.code && (
+                    <Link to={`/etf/${analysis.etf_relevance.code}`} className="text-primary font-mono">
+                      {analysis.etf_relevance.code}
+                    </Link>
+                  )}
+                  {analysis.etf_relevance.sentiment && (
+                    <span className={`text-sm font-medium px-3 py-1 rounded ${
+                      analysis.etf_relevance.sentiment === 'bullish' ? 'bg-rise/10 text-rise' :
+                      analysis.etf_relevance.sentiment === 'bearish' ? 'bg-fall/10 text-fall' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {analysis.etf_relevance.sentiment === 'bullish' ? '看多' :
+                       analysis.etf_relevance.sentiment === 'bearish' ? '看空' : '中性'}
+                    </span>
+                  )}
+                  {analysis.etf_relevance.confidence != null && (
+                    <span className="text-sm text-gray-500">
+                      置信度: {(analysis.etf_relevance.confidence * 100).toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+              )}
             </Card>
           )}
         </div>

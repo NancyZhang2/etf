@@ -150,7 +150,11 @@ export interface ResearchAnalysis {
   }
   risk_factors?: string[]
   key_points?: string[]
-  etf_relevance?: string
+  etf_relevance?: {
+    code?: string
+    sentiment?: string
+    confidence?: number
+  } | string
 }
 
 export interface ResearchFramework {
