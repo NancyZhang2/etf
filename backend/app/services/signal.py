@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.etf import EtfDaily
 from backend.app.models.strategy import Strategy, TradingSignal
+from backend.app.models.virtual_portfolio import VirtualAccount
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,9 @@ async def generate_all_signals(db: AsyncSession) -> int:
             # 更新策略的最后信号日期
             strategy_row.last_signal_date = today
 
+            # 虚拟持仓联动：若策略有虚拟账户，执行虚拟交易
+            await _execute_virtual_trades(db, strategy_row.id, signals, today)
+
             logger.info("策略 %s: %d 个信号", strategy_row.name, len(signals))
 
         except Exception as e:
@@ -184,3 +188,29 @@ async def _load_etf_data(db: AsyncSession, etf_codes: list) -> dict:
         } for r in records])
         result[code] = df
     return result
+
+
+async def _execute_virtual_trades(
+    db: AsyncSession,
+    strategy_id: int,
+    signals: List[Dict],
+    trade_date: date,
+) -> None:
+    """信号生成后自动执行虚拟交易（如果策略有虚拟账户）"""
+    # 检查是否有虚拟账户
+    result = await db.execute(
+        select(VirtualAccount).where(VirtualAccount.strategy_id == strategy_id)
+    )
+    account = result.scalar_one_or_none()
+    if not account:
+        return
+
+    try:
+        from backend.app.services.virtual_portfolio import (
+            execute_signals, update_daily_snapshot,
+        )
+        await execute_signals(db, strategy_id, signals, trade_date)
+        await update_daily_snapshot(db, strategy_id, trade_date)
+        logger.info("策略 %d: 虚拟交易执行完成", strategy_id)
+    except Exception as e:
+        logger.error("策略 %d 虚拟交易执行失败: %s", strategy_id, e)

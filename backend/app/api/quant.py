@@ -17,6 +17,7 @@ from backend.app.models.strategy import (
 )
 from backend.app.schemas.quant import BacktestRequest
 from backend.app.services.backtest import BacktestEngine
+from backend.app.services import virtual_portfolio as vp_service
 from backend.app.services.strategies.momentum import MomentumStrategy
 from backend.app.services.strategies.ma_trend import MATrendStrategy
 from backend.app.services.strategies.grid import GridStrategy
@@ -269,6 +270,85 @@ async def signals_calendar(month: Optional[str] = None, db: AsyncSession = Depen
 async def strategy_optimize(strategy_id: int, db: AsyncSession = Depends(get_db)):
     """参数优化"""
     return error_response(501, "参数优化尚未实现")
+
+
+# ---------- 虚拟持仓跟踪 ----------
+
+@router.post("/strategies/{strategy_id}/virtual/start")
+async def virtual_start(
+    strategy_id: int,
+    req: Optional[dict] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """创建虚拟账户"""
+    from decimal import Decimal as D
+
+    # 检查策略是否存在
+    result = await db.execute(select(Strategy).where(Strategy.id == strategy_id))
+    if not result.scalar_one_or_none():
+        return error_response(404, f"策略 {strategy_id} 不存在")
+
+    # 检查是否已存在
+    existing = await vp_service.get_account(db, strategy_id)
+    if existing:
+        return error_response(400, "该策略已有虚拟账户")
+
+    capital = D(str(req.get("initial_capital", 200000))) if req else vp_service.DEFAULT_CAPITAL
+    account = await vp_service.create_account(db, strategy_id, capital)
+    return success_response({
+        "account_id": account.id,
+        "strategy_id": account.strategy_id,
+        "initial_capital": float(account.initial_capital),
+        "cash": float(account.cash),
+    })
+
+
+@router.get("/strategies/{strategy_id}/virtual/summary")
+async def virtual_summary(strategy_id: int, db: AsyncSession = Depends(get_db)):
+    """账户概览 + 持仓明细"""
+    summary = await vp_service.get_account_summary(db, strategy_id)
+    if summary is None:
+        return error_response(404, "该策略无虚拟账户")
+    return success_response(summary)
+
+
+@router.get("/strategies/{strategy_id}/virtual/trades")
+async def virtual_trades(
+    strategy_id: int,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """交易记录列表"""
+    from datetime import date as date_type
+
+    sd = date_type.fromisoformat(start_date) if start_date else None
+    ed = date_type.fromisoformat(end_date) if end_date else None
+    trades = await vp_service.get_trade_history(db, strategy_id, sd, ed)
+    return success_response(trades)
+
+
+@router.get("/strategies/{strategy_id}/virtual/nav")
+async def virtual_nav(strategy_id: int, db: AsyncSession = Depends(get_db)):
+    """每日总资产序列"""
+    result = await db.execute(
+        select(VirtualPortfolio)
+        .where(
+            VirtualPortfolio.strategy_id == strategy_id,
+            VirtualPortfolio.etf_code == "",
+        )
+        .order_by(VirtualPortfolio.trade_date)
+    )
+    rows = result.scalars().all()
+    data = [
+        {
+            "trade_date": r.trade_date.isoformat(),
+            "nav": _f(r.nav) or 0,
+            "daily_return": _f(r.daily_return) or 0,
+        }
+        for r in rows
+    ]
+    return success_response(data)
 
 
 # ---------- Helper functions ----------

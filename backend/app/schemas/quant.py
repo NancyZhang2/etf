@@ -76,3 +76,43 @@ class PortfolioOut(BaseModel):
     daily_return: Optional[Decimal] = None
 
     model_config = {"from_attributes": True}
+
+
+# ---------- 虚拟持仓跟踪 Schemas ----------
+
+class VirtualStartRequest(BaseModel):
+    initial_capital: Decimal = Decimal("200000")
+
+
+class VirtualPositionOut(BaseModel):
+    etf_code: str
+    quantity: int
+    avg_cost: float
+    market_value: float
+    profit_pct: float
+
+
+class VirtualSummaryOut(BaseModel):
+    initial_capital: float
+    cash: float
+    total_value: float
+    total_return_pct: float
+    positions: List[VirtualPositionOut]
+    start_date: Optional[str] = None
+
+
+class VirtualTradeOut(BaseModel):
+    id: int
+    etf_code: str
+    trade_date: str
+    direction: str
+    price: float
+    quantity: int
+    amount: float
+    commission: float
+
+
+class VirtualNavOut(BaseModel):
+    trade_date: str
+    nav: float
+    daily_return: float
