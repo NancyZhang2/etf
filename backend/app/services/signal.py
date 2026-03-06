@@ -29,6 +29,14 @@ def _get_strategy_classes():
         from backend.app.services.strategies.asset_alloc import AssetAllocStrategy
         from backend.app.services.strategies.egg_28 import Egg28Strategy
         from backend.app.services.strategies.guorn_rotation import GuornRotationStrategy
+        from backend.app.services.strategies.egg_28_plus import Egg28PlusStrategy
+        from backend.app.services.strategies.baxian import BaxianStrategy
+        from backend.app.services.strategies.sleep_balance import SleepBalanceStrategy
+        from backend.app.services.strategies.all_weather_cn import AllWeatherCNStrategy
+        from backend.app.services.strategies.value_rotation import ValueRotationStrategy
+        from backend.app.services.strategies.huabao_grid import HuabaoGridStrategy
+        from backend.app.services.strategies.rsrs_momentum import RSRSMomentumStrategy
+        from backend.app.services.strategies.multi_factor import MultiFactorStrategy
 
         STRATEGY_CLASSES.update({
             "momentum": MomentumStrategy,
@@ -37,6 +45,14 @@ def _get_strategy_classes():
             "asset_alloc": AssetAllocStrategy,
             "egg_28": Egg28Strategy,
             "guorn_rotation": GuornRotationStrategy,
+            "egg_28_plus": Egg28PlusStrategy,
+            "baxian": BaxianStrategy,
+            "sleep_balance": SleepBalanceStrategy,
+            "all_weather_cn": AllWeatherCNStrategy,
+            "value_rotation": ValueRotationStrategy,
+            "huabao_grid": HuabaoGridStrategy,
+            "rsrs_momentum": RSRSMomentumStrategy,
+            "multi_factor": MultiFactorStrategy,
         })
     return STRATEGY_CLASSES
 

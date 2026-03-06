@@ -1,5 +1,5 @@
 """
-种子数据 — 策略分类 + 全部6个策略记录
+种子数据 — 策略分类 + 全部14个策略记录
 """
 
 import logging
@@ -20,6 +20,14 @@ async def seed_strategy_data(db: AsyncSession) -> None:
     from backend.app.services.strategies.asset_alloc import AssetAllocStrategy
     from backend.app.services.strategies.egg_28 import Egg28Strategy
     from backend.app.services.strategies.guorn_rotation import GuornRotationStrategy
+    from backend.app.services.strategies.egg_28_plus import Egg28PlusStrategy
+    from backend.app.services.strategies.baxian import BaxianStrategy
+    from backend.app.services.strategies.sleep_balance import SleepBalanceStrategy
+    from backend.app.services.strategies.all_weather_cn import AllWeatherCNStrategy
+    from backend.app.services.strategies.value_rotation import ValueRotationStrategy
+    from backend.app.services.strategies.huabao_grid import HuabaoGridStrategy
+    from backend.app.services.strategies.rsrs_momentum import RSRSMomentumStrategy
+    from backend.app.services.strategies.multi_factor import MultiFactorStrategy
 
     # 1. 策略分类
     existing = await db.execute(select(StrategyCategory))
@@ -51,6 +59,14 @@ async def seed_strategy_data(db: AsyncSession) -> None:
         (AssetAllocStrategy, classic_id),
         (Egg28Strategy, reverse_id),
         (GuornRotationStrategy, reverse_id),
+        (Egg28PlusStrategy, reverse_id),
+        (BaxianStrategy, reverse_id),
+        (SleepBalanceStrategy, reverse_id),
+        (AllWeatherCNStrategy, reverse_id),
+        (ValueRotationStrategy, reverse_id),
+        (HuabaoGridStrategy, reverse_id),
+        (RSRSMomentumStrategy, reverse_id),
+        (MultiFactorStrategy, reverse_id),
     ]
 
     for cls, cat_id in strategy_defs:

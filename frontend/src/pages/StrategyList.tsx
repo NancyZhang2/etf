@@ -69,6 +69,12 @@ export default function StrategyList() {
   )
 }
 
+// Mapping of strategy_type to similar classic strategy labels
+const SIMILAR_STRATEGY_MAP: Record<string, string> = {
+  all_weather_cn: '与经典策略A4(大类资产配置)逻辑相似',
+  huabao_grid: '与经典策略A3(网格交易)逻辑相似',
+}
+
 function StrategyCard({
   strategy,
   backtest,
@@ -78,6 +84,8 @@ function StrategyCard({
   backtest?: BacktestResult
   loading: boolean
 }) {
+  const similarLabel = SIMILAR_STRATEGY_MAP[strategy.strategy_type]
+
   return (
     <Link to={`/strategy/${strategy.id}`}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
@@ -86,6 +94,11 @@ function StrategyCard({
             <h3 className="font-medium text-gray-900">{strategy.name}</h3>
             <span className="text-xs text-gray-400">{strategy.strategy_type}</span>
           </div>
+          {similarLabel && (
+            <span className="inline-block text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
+              {similarLabel}
+            </span>
+          )}
           <p className="text-xs text-gray-500 line-clamp-2">{strategy.description}</p>
           {loading ? (
             <div className="text-xs text-gray-400">加载中...</div>
