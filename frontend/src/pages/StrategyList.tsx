@@ -40,7 +40,15 @@ export default function StrategyList() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">策略中心</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">策略中心</h2>
+        <Link
+          to="/strategy/compare"
+          className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          策略对比
+        </Link>
+      </div>
 
       {/* Category tabs */}
       <div className="flex gap-2">

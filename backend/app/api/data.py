@@ -178,18 +178,26 @@ async def etf_latest(code: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/data/sync")
-async def data_sync(background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
-    """触发增量数据更新"""
+async def data_sync(
+    source: Optional[str] = "tushare",
+    background_tasks: BackgroundTasks = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """触发增量数据更新（source: tushare 或 akshare）"""
     async def _do_sync():
         from backend.app.database import async_session
         async with async_session() as session:
             try:
-                await incremental_update(session)
+                if source == "tushare":
+                    from backend.app.services.tushare_data import incremental_update as ts_update
+                    await ts_update(session, days=5)
+                else:
+                    await incremental_update(session)
             except Exception as e:
                 logger.error("增量更新失败: %s", e)
 
     background_tasks.add_task(_do_sync)
-    return success_response({"message": "增量更新已触发"})
+    return success_response({"message": f"增量更新已触发 (数据源: {source})"})
 
 
 @router.get("/data/status")

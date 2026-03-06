@@ -9,9 +9,11 @@ const EtfList = lazy(() => import('@/pages/EtfList'))
 const EtfDetail = lazy(() => import('@/pages/EtfDetail'))
 const StrategyList = lazy(() => import('@/pages/StrategyList'))
 const StrategyDetail = lazy(() => import('@/pages/StrategyDetail'))
+const StrategyCompare = lazy(() => import('@/pages/StrategyCompare'))
 const SignalPanel = lazy(() => import('@/pages/SignalPanel'))
 const ResearchList = lazy(() => import('@/pages/ResearchList'))
 const ResearchDetail = lazy(() => import('@/pages/ResearchDetail'))
+const UserCenter = lazy(() => import('@/pages/UserCenter'))
 const NotFound = lazy(() => import('@/components/common/NotFound'))
 
 // Wrap lazy components with Suspense
@@ -35,10 +37,12 @@ export const router = createBrowserRouter([
       { path: 'etf', element: withSuspense(EtfList) },
       { path: 'etf/:code', element: withSuspense(EtfDetail) },
       { path: 'strategy', element: withSuspense(StrategyList) },
+      { path: 'strategy/compare', element: withSuspense(StrategyCompare) },
       { path: 'strategy/:id', element: withSuspense(StrategyDetail) },
       { path: 'signals', element: withSuspense(SignalPanel) },
       { path: 'research', element: withSuspense(ResearchList) },
       { path: 'research/:id', element: withSuspense(ResearchDetail) },
+      { path: 'user', element: withSuspense(UserCenter) },
       { path: '*', element: withSuspense(NotFound) },
     ],
   },

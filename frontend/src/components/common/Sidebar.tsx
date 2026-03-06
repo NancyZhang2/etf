@@ -6,6 +6,7 @@ const navItems = [
   { to: '/strategy', label: '策略', icon: '⚙' },
   { to: '/signals', label: '信号', icon: '🔔' },
   { to: '/research', label: '研报', icon: '📄' },
+  { to: '/user', label: '我的', icon: '👤' },
 ]
 
 function NavItem({ to, label, icon }: { to: string; label: string; icon: string }) {

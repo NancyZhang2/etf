@@ -13,13 +13,10 @@ export default function EtfList() {
   const etfs = useApi(() => getEtfList())
   const categories = useApi(() => getEtfCategories())
 
-  if (etfs.loading || categories.loading) return <Loading />
-  if (etfs.error) return <ErrorDisplay message={etfs.error} onRetry={etfs.reload} />
-
   const allEtfs = etfs.data || []
   const cats = categories.data || []
 
-  // Client-side filtering
+  // Client-side filtering — must be above early returns (Rules of Hooks)
   const filtered = useMemo(() => {
     let result = allEtfs
     if (activeCategory) {
@@ -35,6 +32,9 @@ export default function EtfList() {
     }
     return result
   }, [allEtfs, activeCategory, searchTerm])
+
+  if (etfs.loading || categories.loading) return <Loading />
+  if (etfs.error) return <ErrorDisplay message={etfs.error} onRetry={etfs.reload} />
 
   return (
     <div className="space-y-4">
