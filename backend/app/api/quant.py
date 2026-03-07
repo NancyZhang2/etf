@@ -393,10 +393,14 @@ def _build_close_df(data: dict) -> pd.DataFrame:
 
 
 def _f(val) -> Optional[float]:
-    """安全转换 Decimal → float"""
+    """安全转换 Decimal → float，过滤 NaN/Inf"""
     if val is None:
         return None
     try:
-        return float(val)
+        import math
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return None
+        return f
     except (TypeError, ValueError):
         return None
