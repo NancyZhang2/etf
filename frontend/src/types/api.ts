@@ -113,6 +113,41 @@ export interface SignalHistoryItem {
   reason: string | null
 }
 
+// ── Virtual Portfolio ──
+export interface VirtualAccountSummary {
+  initial_capital: number
+  cash: number
+  total_value: number
+  total_return_pct: number
+  start_date: string | null
+  positions: VirtualPositionItem[]
+}
+
+export interface VirtualPositionItem {
+  etf_code: string
+  quantity: number
+  avg_cost: number
+  market_value: number
+  profit_pct: number
+}
+
+export interface VirtualTradeItem {
+  id: number
+  etf_code: string
+  trade_date: string
+  direction: 'BUY' | 'SELL'
+  price: number
+  quantity: number
+  amount: number
+  commission: number
+}
+
+export interface VirtualNavPoint {
+  trade_date: string
+  nav: number
+  daily_return: number
+}
+
 // ── Research Module ──
 export interface ResearchReportItem {
   id: number

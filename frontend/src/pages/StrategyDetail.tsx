@@ -8,6 +8,9 @@ import {
   getPortfolio,
   getSignalsLatest,
   runCustomBacktest,
+  getVirtualSummary,
+  getVirtualNav,
+  getVirtualTrades,
 } from '@/services/quantApi'
 import Loading from '@/components/common/Loading'
 import ErrorDisplay from '@/components/common/ErrorDisplay'
@@ -16,7 +19,7 @@ import MetricCard from '@/components/common/MetricCard'
 import SignalBadge from '@/components/common/SignalBadge'
 import BarChart from '@/components/charts/BarChart'
 import LineChart from '@/components/charts/LineChart'
-import { formatPercent, formatNumber, formatDate } from '@/utils/format'
+import { formatPercent, formatNumber, formatDate, formatAmount } from '@/utils/format'
 import type { BacktestResult } from '@/types/api'
 
 export default function StrategyDetail() {
@@ -28,6 +31,9 @@ export default function StrategyDetail() {
   const yearly = useApi(() => getBacktestYearly(strategyId), [strategyId])
   const portfolio = useApi(() => getPortfolio(strategyId), [strategyId])
   const signals = useApi(() => getSignalsLatest(strategyId), [strategyId])
+  const virtualSummary = useApi(() => getVirtualSummary(strategyId), [strategyId])
+  const virtualNav = useApi(() => getVirtualNav(strategyId), [strategyId])
+  const virtualTrades = useApi(() => getVirtualTrades(strategyId), [strategyId])
 
   const [customParams, setCustomParams] = useState<Record<string, unknown>>({})
   const [customBt, setCustomBt] = useState<BacktestResult | null>(null)
@@ -43,6 +49,9 @@ export default function StrategyDetail() {
   const yearlyData = yearly.data || []
   const portfolioData = portfolio.data || []
   const signalData = signals.data || []
+  const vSummary = virtualSummary.data
+  const vNavData = virtualNav.data || []
+  const vTradeData = virtualTrades.data || []
 
   // Build NAV chart data
   const navDates: string[] = []
@@ -180,6 +189,114 @@ export default function StrategyDetail() {
           </Card>
         )}
       </div>
+
+      {/* ── Virtual Portfolio: Overview ── */}
+      {vSummary && (
+        <Card title="实盘跟踪">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MetricCard label="初始资金" value={formatAmount(vSummary.initial_capital)} />
+            <MetricCard label="总资产" value={formatAmount(vSummary.total_value)} />
+            <MetricCard label="可用现金" value={formatAmount(vSummary.cash)} />
+            <MetricCard
+              label="总收益率"
+              value={formatPercent(vSummary.total_return_pct)}
+              color={vSummary.total_return_pct >= 0 ? 'rise' : 'fall'}
+            />
+          </div>
+        </Card>
+      )}
+
+      {/* ── Virtual Portfolio: Positions + NAV ── */}
+      {vSummary && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Positions table */}
+          <Card title="当前持仓">
+            {vSummary.positions.length === 0 ? (
+              <div className="text-gray-400 text-sm text-center py-4">暂无持仓</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left bg-gray-50">
+                      <th className="px-3 py-2 font-medium text-gray-500">ETF</th>
+                      <th className="px-3 py-2 font-medium text-gray-500">数量</th>
+                      <th className="px-3 py-2 font-medium text-gray-500 hidden md:table-cell">均价</th>
+                      <th className="px-3 py-2 font-medium text-gray-500">市值</th>
+                      <th className="px-3 py-2 font-medium text-gray-500">盈亏</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vSummary.positions.map((pos) => (
+                      <tr key={pos.etf_code} className="border-t border-gray-50">
+                        <td className="px-3 py-2">
+                          <Link to={`/etf/${pos.etf_code}`} className="text-primary">{pos.etf_code}</Link>
+                        </td>
+                        <td className="px-3 py-2">{pos.quantity}</td>
+                        <td className="px-3 py-2 hidden md:table-cell">{formatNumber(pos.avg_cost, 4)}</td>
+                        <td className="px-3 py-2">{formatAmount(pos.market_value)}</td>
+                        <td className={`px-3 py-2 ${pos.profit_pct >= 0 ? 'text-rise' : 'text-fall'}`}>
+                          {formatPercent(pos.profit_pct)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Virtual NAV chart */}
+          <Card title="实盘净值">
+            {vNavData.length === 0 ? (
+              <div className="text-gray-400 text-sm text-center py-4">暂无净值数据</div>
+            ) : (
+              <LineChart
+                dates={vNavData.map((p) => p.trade_date)}
+                series={[
+                  { name: '实盘净值', data: vNavData.map((p) => p.nav), color: '#10b981', areaStyle: true },
+                ]}
+                height={280}
+              />
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* ── Virtual Portfolio: Trade History ── */}
+      {vTradeData.length > 0 && (
+        <Card title="交易记录">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left bg-gray-50">
+                  <th className="px-3 py-2 font-medium text-gray-500">日期</th>
+                  <th className="px-3 py-2 font-medium text-gray-500">ETF</th>
+                  <th className="px-3 py-2 font-medium text-gray-500">方向</th>
+                  <th className="px-3 py-2 font-medium text-gray-500">价格</th>
+                  <th className="px-3 py-2 font-medium text-gray-500 hidden md:table-cell">数量</th>
+                  <th className="px-3 py-2 font-medium text-gray-500 hidden md:table-cell">金额</th>
+                  <th className="px-3 py-2 font-medium text-gray-500 hidden md:table-cell">佣金</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vTradeData.slice(0, 20).map((t) => (
+                  <tr key={t.id} className="border-t border-gray-50">
+                    <td className="px-3 py-2 text-gray-500">{formatDate(t.trade_date)}</td>
+                    <td className="px-3 py-2">
+                      <Link to={`/etf/${t.etf_code}`} className="text-primary">{t.etf_code}</Link>
+                    </td>
+                    <td className="px-3 py-2"><SignalBadge signal={t.direction} /></td>
+                    <td className="px-3 py-2">{formatNumber(t.price, 4)}</td>
+                    <td className="px-3 py-2 hidden md:table-cell">{t.quantity}</td>
+                    <td className="px-3 py-2 hidden md:table-cell">{formatAmount(t.amount)}</td>
+                    <td className="px-3 py-2 hidden md:table-cell">{formatNumber(t.commission, 2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Recent signals */}
       <Card title="最近信号">

@@ -7,6 +7,9 @@ import type {
   PortfolioRecord,
   SignalItem,
   SignalHistoryItem,
+  VirtualAccountSummary,
+  VirtualTradeItem,
+  VirtualNavPoint,
 } from '@/types/api'
 
 export function getStrategies(categoryId?: number): Promise<StrategyItem[]> {
@@ -49,4 +52,28 @@ export function getSignalHistory(params: {
   end_date?: string
 }): Promise<SignalHistoryItem[]> {
   return api.get('/signals/history', { params })
+}
+
+// ── Virtual Portfolio ──
+
+export function getVirtualSummary(id: number): Promise<VirtualAccountSummary> {
+  return api.get(`/strategies/${id}/virtual/summary`)
+}
+
+export function getVirtualNav(id: number): Promise<VirtualNavPoint[]> {
+  return api.get(`/strategies/${id}/virtual/nav`)
+}
+
+export function getVirtualTrades(
+  id: number,
+  params?: { start_date?: string; end_date?: string },
+): Promise<VirtualTradeItem[]> {
+  return api.get(`/strategies/${id}/virtual/trades`, { params })
+}
+
+export function startVirtualAccount(
+  id: number,
+  initialCapital?: number,
+): Promise<{ account_id: number; strategy_id: number; initial_capital: number; cash: number }> {
+  return api.post(`/strategies/${id}/virtual/start`, initialCapital ? { initial_capital: initialCapital } : {})
 }
